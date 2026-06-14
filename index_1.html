@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"/>
+    <title>Canne Connectée SOS — Maxence</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Sora', sans-serif; background: #f0f4f8; color: #1a2332; }
+        .bg-mesh { position: fixed; inset: 0; background: radial-gradient(ellipse at 20% 50%, #e8f0fe 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, #e3f2fd 0%, transparent 50%); z-index: -1; }
+        .site-header { position: sticky; top: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #e2e8f0; z-index: 100; }
+        .header-inner { max-width: 900px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .header-brand { display: flex; align-items: center; gap: 12px; }
+        .brand-icon { width: 40px; height: 40px; background: #1e3a5f; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; }
+        .brand-title { font-size: 1.1rem; font-weight: 700; color: #1e3a5f; }
+        .brand-title span { color: #e53e3e; }
+        .brand-subtitle { font-size: 0.72rem; color: #718096; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+        .status-badge { display: flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; }
+        .status-veille { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; }
+        .status-sos { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+        .status-sos .status-dot { animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+        .banner-sos { background: #e53e3e; color: white; text-align: center; padding: 12px 20px; font-weight: 600; font-size: 0.95rem; display: none; align-items: center; justify-content: center; gap: 10px; }
+        .main-content { max-width: 900px; margin: 0 auto; padding: 24px 20px; display: flex; flex-direction: column; gap: 20px; }
+        .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .icon-blue { background: #ebf4ff; color: #2b6cb0; }
+        .icon-green { background: #f0fff4; color: #276749; }
+        .icon-indigo { background: #ebf4ff; color: #4c51bf; }
+        .card-header h2 { font-size: 1rem; font-weight: 600; color: #1e3a5f; }
+        .badge-count { margin-left: auto; background: #ebf4ff; color: #2b6cb0; border-radius: 999px; padding: 2px 10px; font-size: 0.8rem; font-weight: 600; }
+        .alerte-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .meta-item { background: #f7fafc; border-radius: 10px; padding: 12px; }
+        .meta-label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #718096; margin-bottom: 4px; }
+        .meta-value { font-size: 1.1rem; font-weight: 700; color: #1e3a5f; }
+        .tag { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+        .tag-resolved { background: #f0fff4; color: #276749; }
+        .tag-active { background: #fff5f5; color: #c53030; }
+        .alerte-position { display: flex; align-items: center; gap: 8px; color: #4a5568; font-size: 0.9rem; margin-bottom: 16px; background: #f7fafc; padding: 12px; border-radius: 10px; }
+        .btn-maps { display: inline-flex; align-items: center; gap: 8px; background: #1e3a5f; color: white; padding: 10px 18px; border-radius: 10px; text-decoration: none; font-size: 0.88rem; font-weight: 600; }
+        .btn-connect { display: inline-flex; align-items: center; gap: 8px; background: #276749; color: white; padding: 12px 20px; border-radius: 10px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; font-family: 'Sora', sans-serif; transition: background 0.2s; width: 100%; justify-content: center; margin-bottom: 12px; }
+        .btn-connect:hover { background: #22543d; }
+        .btn-disconnect { background: #c53030; }
+        .btn-disconnect:hover { background: #9b2c2c; }
+        .connect-status { text-align: center; font-size: 0.85rem; color: #718096; padding: 8px; background: #f7fafc; border-radius: 8px; }
+        .connect-status.connected { color: #276749; background: #f0fff4; }
+        .connect-status.error { color: #c53030; background: #fff5f5; }
+        .historique-table-wrap { overflow-x: auto; }
+        .historique-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        .historique-table thead tr { background: #1e3a5f; color: white; }
+        .historique-table th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 0.8rem; }
+        .historique-table td { padding: 10px 14px; border-bottom: 1px solid #e2e8f0; }
+        .row-latest td { background: #ebf8ff; }
+        .link-maps { display: inline-flex; align-items: center; gap: 5px; color: #2b6cb0; text-decoration: none; font-size: 0.82rem; font-weight: 500; }
+        .melodie-intro { color: #4a5568; font-size: 0.88rem; margin-bottom: 16px; line-height: 1.6; }
+        .melodie-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .melodie-card { background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; text-align: left; cursor: pointer; transition: all 0.2s; }
+        .melodie-card:hover { border-color: #2b6cb0; }
+        .melodie-selected { border-color: #2b6cb0; background: #ebf4ff; }
+        .melodie-nom { display: block; font-weight: 600; color: #1e3a5f; font-size: 0.9rem; margin-bottom: 4px; }
+        .melodie-tempo { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #2b6cb0; font-weight: 600; margin-bottom: 6px; }
+        .melodie-desc { display: block; font-size: 0.82rem; color: #718096; }
+        .code-block-wrap { background: #1a2332; border-radius: 12px; overflow: hidden; }
+        .code-block-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #2d3748; }
+        .code-lang { font-size: 0.75rem; color: #a0aec0; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; }
+        .btn-copy { display: inline-flex; align-items: center; gap: 6px; background: #2d3748; color: #e2e8f0; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: 'Sora', sans-serif; }
+        .code-block { padding: 16px; overflow-x: auto; }
+        .code-block code { font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #a0aec0; white-space: pre; line-height: 1.7; }
+        .site-footer { text-align: center; padding: 24px 20px; color: #718096; font-size: 0.82rem; border-top: 1px solid #e2e8f0; margin-top: 12px; }
+        .footer-sub { margin-top: 4px; font-size: 0.75rem; color: #a0aec0; }
+        @media (max-width: 600px) {
+            .alerte-meta { grid-template-columns: 1fr 1fr; }
+            .melodie-grid { grid-template-columns: 1fr; }
+            .status-label { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-root">
+        <div class="bg-mesh" aria-hidden="true"></div>
+
+        <div id="banner-sos" class="banner-sos">
+            ⚠️ Alerte SOS en cours — Contactez Maxence immédiatement
+        </div>
+
+        <header class="site-header">
+            <div class="header-inner">
+                <div class="header-brand">
+                    <div class="brand-icon">
+                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                            <circle cx="14" cy="14" r="13" stroke="currentColor" stroke-width="2"></circle>
+                            <path d="M14 6v10M14 20v2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
+                            <path d="M9 11l5-5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="brand-title">Canne Connectée <span>SOS</span></h1>
+                        <p class="brand-subtitle">Surveillance — Maxence</p>
+                    </div>
+                </div>
+                <div id="status-badge" class="status-badge status-veille">
+                    <span class="status-dot"></span>
+                    <span class="status-label">En veille</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+
+            <!-- Connexion Arduino -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-icon icon-green">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                    </div>
+                    <h2>Connexion Arduino</h2>
+                </div>
+                <button id="btn-connect" class="btn-connect" onclick="connecterArduino()">
+                    🔌 Connecter la canne
+                </button>
+                <div id="connect-status" class="connect-status">
+                    En attente de connexion — branchez la canne en USB et cliquez sur le bouton
+                </div>
+            </section>
+
+            <!-- Dernière alerte -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-icon icon-blue">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+                        </svg>
+                    </div>
+                    <h2>Dernière alerte</h2>
+                </div>
+                <div class="alerte-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Date</span>
+                        <span class="meta-value" id="alerte-date">--/--/----</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Heure</span>
+                        <span class="meta-value" id="alerte-heure">--:--</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Statut</span>
+                        <span id="alerte-statut" class="tag tag-resolved">En attente</span>
+                    </div>
+                </div>
+                <div class="alerte-position">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" stroke="currentColor" stroke-width="2"></path>
+                        <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2"></circle>
+                    </svg>
+                    <span id="alerte-position">Position non disponible</span>
+                </div>
+                <a id="alerte-maps" href="#" target="_blank" rel="noopener noreferrer" class="btn-maps" style="display:none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    Voir sur Google Maps
+                </a>
+            </section>
+
+            <!-- Historique -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-icon icon-blue">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                        </svg>
+                    </div>
+                    <h2>Historique des alertes</h2>
+                    <span id="badge-count" class="badge-count">0</span>
+                </div>
+                <div class="historique-table-wrap">
+                    <table class="historique-table">
+                        <thead>
+                            <tr><th>#</th><th>Date</th><th>Heure</th><th>Position</th><th>Statut</th><th>Carte</th></tr>
+                        </thead>
+                        <tbody id="historique-body">
+                            <tr><td colspan="6" style="text-align:center;color:#718096;padding:20px;">Aucune alerte enregistrée</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Mélodie -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-icon icon-indigo">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="2"></circle>
+                            <circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="2"></circle>
+                        </svg>
+                    </div>
+                    <h2>Mélodie d'alerte</h2>
+                </div>
+                <p class="melodie-intro">Choisissez la mélodie émise par la canne lors d'un SOS. Copiez le code Arduino correspondant.</p>
+                <div class="melodie-grid">
+                    <button class="melodie-card melodie-selected" onclick="selectMelodie(0)">
+                        <span class="melodie-nom">Alarme classique</span>
+                        <span class="melodie-tempo">Lent (1 Hz)</span>
+                        <span class="melodie-desc">Alternance grave-aigu</span>
+                    </button>
+                    <button class="melodie-card" onclick="selectMelodie(1)">
+                        <span class="melodie-nom">Urgence rapide</span>
+                        <span class="melodie-tempo">Rapide (5 Hz)</span>
+                        <span class="melodie-desc">Signal d'urgence intense</span>
+                    </button>
+                    <button class="melodie-card" onclick="selectMelodie(2)">
+                        <span class="melodie-nom">Mélodie douce</span>
+                        <span class="melodie-tempo">Modéré</span>
+                        <span class="melodie-desc">Gamme ascendante</span>
+                    </button>
+                    <button class="melodie-card" onclick="selectMelodie(3)">
+                        <span class="melodie-nom">SOS Morse</span>
+                        <span class="melodie-tempo">Standard Morse</span>
+                        <span class="melodie-desc">... --- ... signal universel</span>
+                    </button>
+                </div>
+                <div class="code-block-wrap">
+                    <div class="code-block-header">
+                        <span class="code-lang">Arduino C++</span>
+                        <button class="btn-copy" onclick="copierCode()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"></rect>
+                                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" stroke="currentColor" stroke-width="2"></path>
+                            </svg>
+                            <span id="btn-copy-label">Copier le code Arduino</span>
+                        </button>
+                    </div>
+                    <div class="code-block">
+                        <code id="code-arduino"></code>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="site-footer">
+            <p>Canne Connectée Maxence — Système de surveillance SOS</p>
+            <p class="footer-sub">Connexion directe via USB (Web Serial API)</p>
+        </footer>
+    </div>
+
+    <script>
+    let port = null;
+    let reader = null;
+    let sosActif = false;
+    let alertes = [];
+    let compteur = 0;
+
+    // --- Connexion Arduino ---
+    async function connecterArduino() {
+        if (port) {
+            // Déconnecter
+            try {
+                if (reader) { await reader.cancel(); reader = null; }
+                await port.close();
+                port = null;
+            } catch(e) {}
+            majBoutonConnexion(false);
+            majStatut('En attente de connexion — branchez la canne en USB et cliquez sur le bouton', '');
+            return;
+        }
+
+        if (!('serial' in navigator)) {
+            majStatut('⚠️ Web Serial non supporté — utilisez Google Chrome', 'error');
+            return;
+        }
+
+        try {
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 9600 });
+            majBoutonConnexion(true);
+            majStatut('✅ Canne connectée — en attente d\'un SOS...', 'connected');
+            lirePort();
+        } catch(e) {
+            port = null;
+            majStatut('❌ Connexion annulée ou échouée', 'error');
+        }
+    }
+
+    async function lirePort() {
+        const decoder = new TextDecoderStream();
+        port.readable.pipeTo(decoder.writable);
+        const inputStream = decoder.readable;
+        reader = inputStream.getReader();
+        let buffer = '';
+
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buffer += value;
+                const lignes = buffer.split('\n');
+                buffer = lignes.pop();
+                for (const ligne of lignes) {
+                    const msg = ligne.trim();
+                    if (msg) traiterMessage(msg);
+                }
+            }
+        } catch(e) {
+            majStatut('⚠️ Connexion interrompue', 'error');
+            majBoutonConnexion(false);
+        }
+    }
+
+    async function traiterMessage(msg) {
+        console.log('Arduino:', msg);
+
+        if (msg.includes('SOS ENVOYE')) {
+            sosActif = true;
+            const now = new Date();
+            const date = now.toLocaleDateString('fr-FR');
+            const heure = now.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+
+            // Récupérer position
+            let position = 'Position indisponible';
+            let lienMaps = null;
+            try {
+                const r = await fetch('http://ip-api.com/json/');
+                const d = await r.json();
+                if (d.lat && d.lon) {
+                    position = `${d.city}, ${d.regionName}`;
+                    lienMaps = `https://maps.google.com/?q=${d.lat},${d.lon}`;
+                }
+            } catch(e) {}
+
+            // Mettre à jour dernière alerte
+            document.getElementById('alerte-date').textContent = date;
+            document.getElementById('alerte-heure').textContent = heure;
+            document.getElementById('alerte-statut').textContent = 'SOS ACTIF';
+            document.getElementById('alerte-statut').className = 'tag tag-active';
+            document.getElementById('alerte-position').textContent = position;
+            if (lienMaps) {
+                const btnMaps = document.getElementById('alerte-maps');
+                btnMaps.href = lienMaps;
+                btnMaps.style.display = 'inline-flex';
+            }
+
+            // Ajouter à l'historique
+            compteur++;
+            alertes.unshift({ num: compteur, date, heure, position, lienMaps });
+            if (alertes.length > 10) alertes.pop();
+            majHistorique();
+
+            // Statut SOS
+            majSOS(true);
+            majStatut('🚨 SOS détecté ! Alerte en cours...', 'error');
+
+        } else if (msg.includes('SOS ANNULE')) {
+            sosActif = false;
+            document.getElementById('alerte-statut').textContent = 'Résolue';
+            document.getElementById('alerte-statut').className = 'tag tag-resolved';
+            majSOS(false);
+            majStatut('✅ SOS annulé — en attente d\'un nouveau SOS...', 'connected');
+
+            // Mettre à jour la dernière alerte dans l'historique
+            if (alertes.length > 0) {
+                alertes[0].resolue = true;
+                majHistorique();
+            }
+        }
+    }
+
+    function majSOS(actif) {
+        const badge = document.getElementById('status-badge');
+        const banner = document.getElementById('banner-sos');
+        if (actif) {
+            badge.className = 'status-badge status-sos';
+            badge.querySelector('.status-label').textContent = 'SOS ACTIF';
+            banner.style.display = 'flex';
+        } else {
+            badge.className = 'status-badge status-veille';
+            badge.querySelector('.status-label').textContent = 'En veille';
+            banner.style.display = 'none';
+        }
+    }
+
+    function majHistorique() {
+        const tbody = document.getElementById('historique-body');
+        document.getElementById('badge-count').textContent = alertes.length;
+        tbody.innerHTML = alertes.map((a, i) => `
+            <tr class="${i===0 ? 'row-latest' : ''}">
+                <td>${a.num}</td>
+                <td>${a.date}</td>
+                <td>${a.heure}</td>
+                <td>${a.position}</td>
+                <td><span class="tag ${a.resolue ? 'tag-resolved' : 'tag-active'}">${a.resolue ? 'Résolue' : 'SOS actif'}</span></td>
+                <td>${a.lienMaps ? `<a href="${a.lienMaps}" target="_blank" class="link-maps">Carte</a>` : '—'}</td>
+            </tr>
+        `).join('');
+    }
+
+    function majBoutonConnexion(connecte) {
+        const btn = document.getElementById('btn-connect');
+        if (connecte) {
+            btn.textContent = '🔌 Déconnecter la canne';
+            btn.classList.add('btn-disconnect');
+        } else {
+            btn.textContent = '🔌 Connecter la canne';
+            btn.classList.remove('btn-disconnect');
+        }
+    }
+
+    function majStatut(msg, type) {
+        const el = document.getElementById('connect-status');
+        el.textContent = msg;
+        el.className = 'connect-status' + (type ? ' ' + type : '');
+    }
+
+    // --- Mélodies ---
+    const codes = [
+`// === ALARME CLASSIQUE ===
+const int BUZZER_PIN = 9;
+int melodie[] = {880, 988, 1047, 988, 880, 784, 698, 784};
+int dureeNotes[] = {200, 200, 200, 200, 200, 200, 200, 200};
+int nbNotes = 8;
+int noteActuelle = 0;
+unsigned long dernierChangement = 0;
+
+void setup() {}
+void loop() {
+  unsigned long maintenant = millis();
+  if (maintenant - dernierChangement >= dureeNotes[noteActuelle]) {
+    dernierChangement = maintenant;
+    tone(BUZZER_PIN, melodie[noteActuelle]);
+    noteActuelle = (noteActuelle + 1) % nbNotes;
+  }
+}`,
+`// === URGENCE RAPIDE ===
+const int BUZZER_PIN = 9;
+
+void setup() {}
+void loop() {
+  tone(BUZZER_PIN, 1500, 100);
+  delay(150);
+  tone(BUZZER_PIN, 1000, 100);
+  delay(150);
+}`,
+`// === MÉLODIE DOUCE ===
+const int BUZZER_PIN = 9;
+int notes[] = {523, 587, 659, 698, 784, 880, 988, 1047};
+int durees[] = {300, 300, 300, 300, 300, 300, 300, 600};
+int nbNotes = 8;
+int i = 0;
+unsigned long dernierChangement = 0;
+
+void setup() {}
+void loop() {
+  unsigned long maintenant = millis();
+  if (maintenant - dernierChangement >= durees[i]) {
+    dernierChangement = maintenant;
+    tone(BUZZER_PIN, notes[i]);
+    i = (i + 1) % nbNotes;
+  }
+}`,
+`// === SOS MORSE ===
+const int BUZZER_PIN = 9;
+const int DOT = 150;
+const int DASH = 450;
+
+void bip(int duree) {
+  tone(BUZZER_PIN, 800, duree);
+  delay(duree + 100);
+}
+
+void setup() {}
+void loop() {
+  bip(DOT); bip(DOT); bip(DOT); delay(300);
+  bip(DASH); bip(DASH); bip(DASH); delay(300);
+  bip(DOT); bip(DOT); bip(DOT); delay(1000);
+}`
+    ];
+
+    function selectMelodie(index) {
+        document.querySelectorAll('.melodie-card').forEach((c, i) => {
+            c.classList.toggle('melodie-selected', i === index);
+        });
+        document.getElementById('code-arduino').textContent = codes[index];
+    }
+
+    function copierCode() {
+        const code = document.getElementById('code-arduino').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            const label = document.getElementById('btn-copy-label');
+            label.textContent = '✓ Copié !';
+            setTimeout(() => label.textContent = 'Copier le code Arduino', 2000);
+        });
+    }
+
+    // Init
+    selectMelodie(0);
+    </script>
+</body>
+</html>
